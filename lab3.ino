@@ -20,9 +20,10 @@ LedControl ledDisplay = LedControl(26, 22, 24, 3);
 uint64_t lastGameUpdate;
 uint64_t lastDisplayUpdate;
 uint64_t lastFoodBlink;
-const uint64_t gameUpdateDelayMs = 500;
-const uint64_t displayUpdateDelayMs = 100;
+const uint64_t gameUpdateDelayMs = 200;
+const uint64_t displayUpdateDelayMs = 200;
 const uint64_t foodBlinkDelayMs = 200;
+uint64_t lastInputUpdate = 0;
 bool showingFood = true;
 
 char currentKey1 = keyNone;
@@ -40,8 +41,8 @@ char keyMatrix[rowAmount][colAmount] = {
 
 static bool keyDownMatrix[rowAmount][colAmount];
 
-byte rowPins1[rowAmount] = { 5, 4, 3, 2 };
-byte colPins1[colAmount] = { 6, 7, 8, 9 };
+byte rowPins1[rowAmount] = { 43, 45, 47, 49 }; 
+byte colPins1[colAmount] = { 41, 39, 37, 35 };
 
 byte rowPins2[rowAmount] = { 42, 44, 46, 48 };
 byte colPins2[colAmount] = { 40, 38, 36, 34 };
@@ -81,13 +82,14 @@ void setup()
 
   servo1.attach(10);
   servo2.attach(9);
+  servo1.write(0);
+  servo2.write(0);
+  
+  Serial.begin(115200);
 }
 
 void loop()
 {
-  currentKey1 = getKey(0);
-  currentKey2 = getKey(1);
-  
   if (game.isRunning()) {
     updateInput();
     updateGame();
@@ -158,6 +160,7 @@ void drawPaddle(Paddle &paddle)
 }
 
 void updateInput() {
+  lastInputUpdate = millis();
   char key1 = getKey(0);
   char key2 = getKey(1);
   if (key1 != keyNone) {
@@ -171,8 +174,10 @@ void updateInput() {
 void updateGame()
 {
   if (millis() - lastGameUpdate > gameUpdateDelayMs) {
+    
     if (currentKey1 != keyNone) {
       game.paddleMove(keyToDirection(currentKey1), 0);
+      
     }
     if (currentKey2 != keyNone) {
       game.paddleMove(keyToDirection(currentKey2), 1);
@@ -189,7 +194,7 @@ void updateDisplay()
   if (millis() - lastDisplayUpdate > displayUpdateDelayMs) {
     Ball ball = game.getBall();
     Paddle paddle1 = game.getPaddle(0);
-    Paddle paddle2 = game.getPaddle(0);
+    Paddle paddle2 = game.getPaddle(1);
     
     for (int address = 0; address < ledDisplay.getDeviceCount(); address++) {
       ledDisplay.clearDisplay(address);

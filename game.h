@@ -63,6 +63,10 @@ class Paddle {
           }
           break;
       }
+
+      for (int i = 0; i < paddleSize; i++) {
+        position[i].y += shift;
+      }
     }
 
     bool containsPoint(Point &point) {
@@ -84,10 +88,10 @@ class Paddle {
 class Ball {
   public:
     Ball(int maxBoardX, int maxBoardY) {
-      pos.x = 0;
+      pos.x = 1;
       pos.y = maxBoardY / 2;
 
-      direction = RIGHT;
+      direct = RIGHT;
       maxX = maxBoardX;
       maxY = maxBoardY;
     }
@@ -105,29 +109,29 @@ class Ball {
     }
 
     Direction getDirection() {
-      return direction;
+      return direct;
     }
 
     void update() {
-      if (pos.y = 0) {
-        if (direction == UP_RIGHT) {
-          direction = DOWN_RIGHT;
+      if (pos.y == 0) {
+        if (direct == UP_RIGHT) {
+          direct = DOWN_RIGHT;
         }
         else {
-          direction = DOWN_LEFT;
-        }
-      }
-
-      if (pos.y = maxY - 1) {
-        if (direction == DOWN_RIGHT) {
-          direction = UP_RIGHT;
-        }
-        else {
-          direction = UP_LEFT;
+          direct = DOWN_LEFT;
         }
       }
       
-      switch(direction) {
+      if (pos.y == maxY - 1) {
+        if (direct == DOWN_RIGHT) {
+          direct = UP_RIGHT;
+        }
+        else {
+          direct = UP_LEFT;
+        }
+      }
+      
+      switch(direct) {
         case UP_RIGHT:
           pos.y -= 1;
           pos.x += 1;
@@ -161,7 +165,10 @@ class Ball {
       }
 
       void contact(Paddle &paddle) {
-        int paddleSegment = 0;
+        int paddleSegment = -1;
+        if (pos.y == paddle.getPosition(0).y) {
+          paddleSegment = 1;
+        }
         if (pos.y == paddle.getPosition(1).y) {
           paddleSegment = 1;
         }
@@ -169,46 +176,48 @@ class Ball {
           paddleSegment = 2;
         }
         
-        if (pos.x + 1 == paddle.getPosition(0).x) {
+        if (pos.x + 1 == paddle.getPosition(0).x &&
+            (direct == RIGHT || direct == UP_RIGHT || direct == DOWN_RIGHT)) {
           switch(paddleSegment) {
             case 0:
-              direction = UP_LEFT;
+              direct = UP_LEFT;
               break;
             case 1:
-              if (direction == RIGHT) {
-                direction = LEFT;
+              if (direct == RIGHT) {
+                direct = LEFT;
               }
-              if (direction == UP_RIGHT) {
-                direction = UP_LEFT;
+              if (direct == UP_RIGHT) {
+                direct = UP_LEFT;
               }
-              if (direction == DOWN_RIGHT) {
-                direction = DOWN_LEFT;
+              if (direct == DOWN_RIGHT) {
+                direct = DOWN_LEFT;
               }
               break;
             case 2:
-              direction = DOWN_LEFT;
+              direct = DOWN_LEFT;
               break;
           }
         }
 
-        if (pos.x - 1 == paddle.getPosition(0).x) {
+        if (pos.x - 1 == paddle.getPosition(0).x &&
+            (direct == LEFT || direct == UP_LEFT || direct == DOWN_LEFT)) {
           switch(paddleSegment) {
             case 0:
-              direction = UP_RIGHT;
+              direct = UP_RIGHT;
               break;
             case 1:
-              if (direction == LEFT) {
-                direction = RIGHT;
+              if (direct == LEFT) {
+                direct = RIGHT;
               }
-              if (direction == UP_LEFT) {
-                direction = UP_RIGHT;
+              if (direct == UP_LEFT) {
+                direct = UP_RIGHT;
               }
-              if (direction == DOWN_LEFT) {
-                direction = DOWN_RIGHT;
+              if (direct == DOWN_LEFT) {
+                direct = DOWN_RIGHT;
               }
               break;
             case 2:
-              direction = DOWN_RIGHT;
+              direct = DOWN_RIGHT;
               break;
           }
         }
@@ -216,7 +225,7 @@ class Ball {
 
    private:
     Point pos;
-    Direction direction;
+    Direction direct;
     int maxX;
     int maxY;
 };
@@ -231,7 +240,7 @@ class Game {
     Game(int maxBoardX, int maxBoardY):
     ball(maxBoardX, maxBoardY),
     paddle1(maxBoardX, maxBoardY, 0),
-    paddle2(maxBoardX, maxBoardY, maxBoardX) {
+    paddle2(maxBoardX, maxBoardY, maxBoardX - 1) {
       maxX = maxBoardX;
       maxY = maxBoardY;
       state = RUNNING;
@@ -240,9 +249,9 @@ class Game {
 
   void update() {
     if (isRunning()) {
+      ball.update();
       ball.contact(paddle1);
       ball.contact(paddle2);     
-      ball.update();
       if (ball.flewOut()) {
         Point ballPos = ball.getPosition();
         if (ballPos.x <= 0) {
